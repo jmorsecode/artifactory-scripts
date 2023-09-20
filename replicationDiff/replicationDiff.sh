@@ -85,7 +85,7 @@ while test $# -gt 0; do
  TARGETART=${TARGETART%/}
 
 
-status_code=$(curl -u$SOURCEUSER:$SOURCEPASSWORD --write-out %{http_code} --silent --output /dev/null "$SOURCEART/api/storage/$SOURCEREPO/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L)
+status_code=$(curl -u$SOURCEUSER:$SOURCEPASSWORD --write-out %{http_code} --silent --output /dev/null "$SOURCEART/artifactory/api/storage/$SOURCEREPO/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L)
 
 if [[ "$status_code" -eq 401 ]] && [[ "$status_code" -ne 200 ]]
   then
@@ -127,7 +127,7 @@ if [[ "$status_code" -ne 200 ]]
   exit 0
 fi
 
-status_code=$(curl -u$TARGETUSER:$TARGETPASSWORD --write-out %{http_code} --silent --output /dev/null "$TARGETART/api/storage/$TARGETREPO/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L)
+status_code=$(curl -u$TARGETUSER:$TARGETPASSWORD --write-out %{http_code} --silent --output /dev/null "$TARGETART/artifactory/api/storage/$TARGETREPO/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L)
 
 if [[ "$status_code" -eq 401 ]] && [[ "$status_code" -ne 200 ]]
   then
@@ -169,10 +169,10 @@ if [[ "$status_code" -ne 200 ]]
   exit 0
 fi
 
-curl -X GET -u$SOURCEUSER:$SOURCEPASSWORD "$SOURCEART/api/storage/$SOURCEREPO/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L > source.log
-curl -X GET -u$TARGETUSER:$TARGETPASSWORD "$TARGETART/api/storage/$TARGETREPO/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L > target.log
+curl -X GET -u$SOURCEUSER:$SOURCEPASSWORD "$SOURCEART/artifactory/api/storage/$SOURCEREPO/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L > source.log
+curl -X GET -u$TARGETUSER:$TARGETPASSWORD "$TARGETART/artifactory/api/storage/$TARGETREPO/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L > target.log
 
-diff --new-line-format="" --unchanged-line-format=""  source.log target.log > diff_output.txt
+diff source.log target.log > diff_output.txt
 sed -n '/uri/p' diff_output.txt | sed 's/[<>,]//g' | sed '/https/d' | sed '/http/d' | sed  's/ //g' | sed 's/[",]//g' | sed 's/uri://g' > cleanpaths.txt
 prefix=$SOURCEART/$SOURCEREPO
 awk -v prefix="$prefix" '{print prefix $0}' cleanpaths.txt > filepaths_uri.txt
@@ -183,7 +183,9 @@ echo "Here is the count of files sorted according to the file extension that are
 echo
 grep -E ".*\.[a-zA-Z0-9]*$" filepaths_uri.txt | sed -e 's/.*\(\.[a-zA-Z0-9]*\)$/\1/' filepaths_uri.txt | sort | uniq -c | sort -n
 sed '/maven-metadata.xml/d' filepaths_uri.txt |  sed '/Packages.bz2/d' | sed '/.*gemspec.rz$/d' |  sed '/Packages.gz/d' | sed '/Release/d' | sed '/.*json$/d' | sed '/Packages/d' | sed '/by-hash/d' | sed '/filelists.xml.gz/d' | sed '/other.xml.gz/d' | sed '/primary.xml.gz/d' | sed '/repomd.xml/d' | sed '/repomd.xml.asc/d' | sed '/repomd.xml.key/d' > filepaths_nometadatafiles.txt
-rm source.log target.log diff_output.txt cleanpaths.txt
+
+# Commenting out rm cleanup for debugging purposes
+#rm source.log target.log diff_output.txt cleanpaths.txt
 echo
 
 if [[ $DOWNLOADFILES =~ [yY](es)* ]]
@@ -221,7 +223,7 @@ read target_username
 echo "Password for target Artifactory: "
 read -s target_password
 
-status_code=$(curl -u$source_username:$source_password --write-out %{http_code} --silent --output /dev/null "$SOURCE_ART/api/storage/$Source_repo_name/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L)
+status_code=$(curl -u$source_username:$source_password --write-out %{http_code} --silent --output /dev/null "$SOURCE_ART/artifactory/api/storage/$Source_repo_name/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L)
 
 if [[ "$status_code" -eq 401 ]] && [[ "$status_code" -ne 200 ]]
   then
@@ -263,7 +265,7 @@ if [[ "$status_code" -ne 200 ]]
   exit 0
 fi
 
-status_code=$(curl -u$target_username:$target_password --write-out %{http_code} --silent --output /dev/null "$TARGET_ART/api/storage/$Target_repo_name/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L)
+status_code=$(curl -u$target_username:$target_password --write-out %{http_code} --silent --output /dev/null "$TARGET_ART/artifactory/api/storage/$Target_repo_name/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L)
 
 if [[ "$status_code" -eq 401 ]] && [[ "$status_code" -ne 200 ]]
   then
@@ -305,9 +307,9 @@ if [[ "$status_code" -ne 200 ]]
   exit 0
 fi
 
-curl -X GET -u$source_username:$source_password "$SOURCE_ART/api/storage/$Source_repo_name/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L > source.log
-curl -X GET -u$target_username:$target_password "$TARGET_ART/api/storage/$Target_repo_name/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L > target.log
-diff --new-line-format="" --unchanged-line-format=""  source.log target.log > diff_output.txt
+curl -X GET -u$source_username:$source_password "$SOURCE_ART/artifactory/api/storage/$Source_repo_name/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L > source.log
+curl -X GET -u$target_username:$target_password "$TARGET_ART/artifactory/api/storage/$Target_repo_name/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" -L > target.log
+diff source.log target.log > diff_output.txt
 sed -n '/uri/p' diff_output.txt | sed 's/[<>,]//g' | sed '/https/d' | sed '/http/d' | sed  's/ //g' | sed 's/[",]//g' | sed 's/uri://g' > cleanpaths.txt
 prefix=$SOURCE_ART/$Source_repo_name
 awk -v prefix="$prefix" '{print prefix $0}' cleanpaths.txt > filepaths_uri.txt
@@ -318,7 +320,9 @@ echo "Here is the count of files sorted according to the file extension that are
 echo
 grep -E ".*\.[a-zA-Z0-9]*$" filepaths_uri.txt | sed -e 's/.*\(\.[a-zA-Z0-9]*\)$/\1/' filepaths_uri.txt | sort | uniq -c | sort -n
 sed '/maven-metadata.xml/d' filepaths_uri.txt |  sed '/Packages.bz2/d' | sed '/.*gemspec.rz$/d' |  sed '/Packages.gz/d' | sed '/Release/d' | sed '/.*json$/d' | sed '/Packages/d' | sed '/by-hash/d' | sed '/filelists.xml.gz/d' | sed '/other.xml.gz/d' | sed '/primary.xml.gz/d' | sed '/repomd.xml/d' | sed '/repomd.xml.asc/d' | sed '/repomd.xml.key/d' > filepaths_nometadatafiles.txt
-rm source.log target.log diff_output.txt cleanpaths.txt
+
+# Commenting out rm cleanup for debugging purposes
+#rm source.log target.log diff_output.txt cleanpaths.txt
 echo
 echo
 echo "Do you want to download all the files that are present in Source repository and missing from the Target repository?(yes/no)"
